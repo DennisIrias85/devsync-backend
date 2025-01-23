@@ -1,18 +1,27 @@
 const express = require('express');
 const Task = require('../models/Task');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware.js');
+const { protect } = require('../middleware/authMiddleware');
 
-router.use(authMiddleware);
+router.use(protect)
 
 router.post('/', async (req, res) => {
     const { title, description, status } = req.body;
-    const task = new Task({ title, description, status, user: req.userId });
+    const task = new Task({ title, description, status, user: req.user._id });
     try {
         await task.save();
         res.status(201).json(task);
     } catch (err) {
         res.status(400).json({ message: 'Error creating task' });
+    }
+});
+
+router.get('/', async (req, res) => {
+    try {
+        const tasks = await Task.find({ user: req.user._id }); 
+        res.json(tasks);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
