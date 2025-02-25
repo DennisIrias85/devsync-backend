@@ -3,15 +3,26 @@ const Task = require('../models/Task');
 const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
 
-router.use(protect)
+router.use(protect);
 
 router.post('/', async (req, res) => {
-    const { title, description, status } = req.body;
-    const task = new Task({ title, description, status, user: req.user._id });
+    const { title, description, status, category, reminder } = req.body;
+    console.log('User in POST route:', req.user); // <-- Added log
+
+    const task = new Task({ 
+        title, 
+        description, 
+        status, 
+        category, 
+        reminder, 
+        user: req.user._id 
+    });
     try {
-        await task.save();
-        res.status(201).json(task);
+        const savedTask = await task.save();
+        console.log('Task successfully saved:', savedTask); // <-- Added log
+        res.status(201).json(savedTask);
     } catch (err) {
+        console.error('Error saving task:', err);
         res.status(400).json({ message: 'Error creating task' });
     }
 });
@@ -53,7 +64,7 @@ router.put('/:id', async (req, res) => {
         const { title, description, status } = req.body;
         const updatedTask = await Task.findByIdAndUpdate(
             req.params.id,
-            { title, description, status },
+            { title, description, status, category, reminder, dueDate },
             { new: true, runValidators: true }
         );
 
@@ -69,6 +80,5 @@ router.put('/:id', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-
 
 module.exports = router;
