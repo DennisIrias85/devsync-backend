@@ -6,24 +6,28 @@ const { protect } = require('../middleware/authMiddleware');
 router.use(protect);
 
 router.post('/', async (req, res) => {
-    const { title, description, status, category, reminder } = req.body;
-    console.log('User in POST route:', req.user); // <-- Added log
+    const { title, description, status, category, reminder, dueDate } = req.body;
 
-    const task = new Task({ 
-        title, 
-        description, 
-        status, 
-        category, 
-        reminder, 
-        user: req.user._id 
-    });
+    if (!title) {
+        return res.status(400).json({ message: 'Task title is required' });
+    }
+
     try {
-        const savedTask = await task.save();
-        console.log('Task successfully saved:', savedTask); // <-- Added log
-        res.status(201).json(savedTask);
+        const task = new Task({ 
+            title, 
+            description, 
+            status, 
+            category, 
+            reminder: reminder ? new Date(reminder) : null,
+            dueDate: dueDate ? new Date(dueDate) : null,  
+            user: req.user._id 
+        });
+
+        await task.save();
+        res.status(201).json(task);
     } catch (err) {
-        console.error('Error saving task:', err);
-        res.status(400).json({ message: 'Error creating task' });
+        console.error('Error creating task:', err);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
@@ -61,7 +65,8 @@ router.put('/:id', async (req, res) => {
     try {
         console.log('Updating task with ID:', req.params.id);
         
-        const { title, description, status } = req.body;
+        const { title, description, status, category, reminder, dueDate } = req.body;
+
         const updatedTask = await Task.findByIdAndUpdate(
             req.params.id,
             { title, description, status, category, reminder, dueDate },
